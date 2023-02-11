@@ -1,0 +1,355 @@
+---
+title: "Nicolas Novoa, Id: 187872, Course:BUSINESS INTELLIGENCE"
+output:
+  pdf_document: default
+  word_document: default
+  html_document:
+    df_print: paged
+date: '2023-01-03'
+---
+
+
+## Sesión 1: Data Loanding
+
+cargar datos 
+
+
+```{r, echo=FALSE,message=FALSE,warning=FALSE}
+library(readr)
+```
+
+
+```{r,echo=FALSE,Warning=FALSE}
+Dataset_01 <- read_csv("C:/Users/pc/Downloads/Dataset_01.csv")
+
+Dataset_02 <- read_csv("C:/Users/pc/Downloads/Dataset_02.csv")
+```
+
+
+```{r, echo=FALSE, warning=FALSE}
+Data <- merge(Dataset_01,Dataset_02,all = T)
+setwd("C:/Users/pc/Desktop")
+write.csv(Data, "Data.csv")
+```
+
+
+Una vez realizado la unión de los Dataframes y además incluir el row names, se evidencia que la columna User_ID, se encuentra en el data set por lo cual ya es inútil para nuestro estudio estadístico tenerla como columna por lo cual se elimina del conjunto de datos. 
+
+
+```{r, echo=FALSE}
+row.names(Data) <- Data$User_ID
+Data <- Data[,-1]
+kableExtra::kable(head(Data))
+```
+
+
+### Las variables numéricas presentes en el dataset son:
+
+
+- Usage_length
+- Monthly_fee 
+- Total_fee 
+
+
+### Resumen estadístico "Usage_length"
+
+```{r, echo=FALSE, warning=FALSE}
+library(dbplyr)
+```
+
+
+
+```{r, echo=FALSE, warning=FALSE}
+library(dplyr)
+kableExtra::kable(
+Data %>% 
+  group_by(User_Gender) %>% 
+  summarise(Mean=mean(Usage_Length),Median=median(Usage_Length),
+            Min=min(Usage_Length),Max=max(Usage_Length),
+            Standard_Deviation=sd(Usage_Length)
+            ))
+```
+
+
+
+### Resumen estadístico "Monthly_fee"
+
+
+```{r, echo=FALSE, warning=FALSE, fig.width=4,fig.height=4}
+kableExtra::kable(
+Data %>% 
+  group_by(User_Gender) %>% 
+  summarise(Mean=mean(Monthly_Fee),Median=median(Monthly_Fee),
+            Min=min(Monthly_Fee),Max=max(Monthly_Fee),
+            Standard_Deviation=sd(Monthly_Fee)
+            ))
+```
+
+
+### Resumen estadístico "Total_fee"
+
+
+```{r, echo=F, fig.width=5,fig.height=5}
+kableExtra::kable(
+Data %>% 
+  group_by(User_Gender) %>% 
+  summarise(Mean=mean(Total_Fee),Median=median(Total_Fee),
+            Min=min(Total_Fee),Max=max(Total_Fee),
+            Standard_Deviation=sd(Total_Fee)
+            ))
+```
+
+
+
+## sesion 2. Descriptive Analytics
+
+
+1. Las mujeres con hijos, poseen una tarifa mensual más baja que las mujeres que no tienen hijos?
+
+
+```{r, echo=FALSE}
+mujeres <- Data %>% filter(User_Gender=="F")
+```
+
+```{r, echo=F}
+kableExtra::kable(mujeres %>% group_by(Has_Children) %>% 
+  summarize(mean=mean(Monthly_Fee)))
+```
+
+
+* Se evidencia como las mujeres que poseen hijos, presentan en promedio una couta mensual menor. Por lo cuál se confirma la hipotesis planteada. 
+
+
+2. Los clientes nuevos, es decir menor a 12 meses son mas propensos a quedarse o unirse que los antiguos.
+
+
+```{r, echo=FALSE}
+user <- Data %>% select(Attrition,Usage_Length) %>% mutate(user_old=ifelse(Usage_Length>=12,"OLD","NEW"))
+
+kableExtra::kable(prop.table(table(user$user_old,user$Attrition),1),digits = 2)
+```
+
+
+* al analizar la proporcionalidad de los usuarios considerados nuevos y antiguos, se nota como los usuarios con mayor antiguedad no abandonan el servicio. 
+
+
+3. Los usuarios Senior, poseen una menor tarifa en respecto aquellos que no.?
+
+
+```{r, echo=FALSE}
+
+kableExtra::kable(Data %>% group_by(Is_Senior) %>% 
+  summarise(mean=mean(Monthly_Fee)))
+
+```
+
+
+* Al analizar el promedio de la tarifa mensual, observamos que los clientes senior, poseen un couta más alta. 
+
+
+4. Tabla con medios de pagos y costos totales promedios 
+
+
+```{r, echo=F, warning=FALSE}
+library(kableExtra)
+
+kable(
+Data %>% group_by(Payment_Method) %>% 
+  summarise(Costo_promedio=mean(Total_Fee)))
+
+```
+
+
+## Sesion 3. Data Visualisation 
+
+1. gráfico circular de procentajes de tipo de contratos. 
+
+
+```{r, echo=F, warning=FALSE,fig.height=3, fig.width=4}
+contratos = Data %>%  group_by(Contract_Type) %>% count() %>%  ungroup() %>% mutate(porcentaje=round((n/sum(n))*100),2)
+
+etiquetas = paste0(contratos$porcentaje,"%")
+etiquetas = paste0(contratos$Contract_Type,etiquetas,sep="  ")
+pie(contratos$n, labels = etiquetas, main = "Tipos de contratos")
+
+```
+
+* Como se aprecia en el diagrama de pie, se evidencia claramente que el tipo de contrato de mayor incidencia es el mes a mes con un procentaje de 54%. 
+
+
+2. Histograma de la distribución de la duración del cliente. 
+
+
+```{r, echo=FALSE}
+hist(Data$Usage_Length, breaks = "sturges", probability = TRUE, xlab = "", main = "Histograma de la duración del cliente")
+```
+
+
+* Como se aprecia en el histograma, no se evidencia una distribución reconocible a simple vista. 
+
+
+3. Gráfico de barras, tasas de abandonos por duración de uso. 
+
+
+## Sesión 4. Predición de abonos de clientes. 
+
+### Regresión logistica 
+
+
+La Regresión Logística Simple, desarrollada por David Cox en 1958, es un método de regresión que permite estimar la probabilidad de una variable cualitativa binaria en función de una variable cuantitativa. Una de las principales aplicaciones de la regresión logística es la de clasificación binaria, en el que las observaciones se clasifican en un grupo u otro dependiendo del valor que tome la variable empleada como predictor.
+
+
+### Regresión logística múltiple 
+
+
+Modelo 
+
+
+Partiendo de la función logaritmica de probabilidad
+
+$ln (\frac{p_i}{1-p_i}) = \beta_{0}+\beta _{1}x_{1}+...+\beta_{i}x_{i}$ 
+
+Realizando simplificaciones obtenemos 
+
+$p=\frac{1}{1+e^{-(\beta_0+\beta_1x_1+...+\beta_ix_i)}}$
+
+```{r, echo=FALSE}
+Data$User_Gender <-  factor(Data$User_Gender)
+Data$Is_Senior <- factor(Data$Is_Senior)
+Data$Has_Partner <- factor(Data$Has_Partner)
+Data$Has_Children <- factor(Data$Has_Children)
+Data$Has_Phone_Service <- factor(Data$Has_Phone_Service)
+Data$Multiple_Lines <- factor(Data$Multiple_Lines)
+Data$Intnet_Provider <- factor(Data$Intnet_Provider)
+Data$Has_Security_Service <- factor(Data$Has_Security_Service)
+Data$Has_Online_Backup <- factor(Data$Has_Online_Backup)
+Data$Has_Device_Protection <- factor(Data$Has_Device_Protection)
+Data$Has_Tech_Support <- factor(Data$Has_Tech_Support)
+Data$Has_Steam_TV <- factor(Data$Has_Steam_TV)
+Data$Has_Steam_Movies <- factor(Data$Contract_Type)
+Data$Has_Paperless_Billing <- factor(Data$Has_Paperless_Billing)
+Data$Payment_Method <- factor(Data$Payment_Method)
+```
+
+```{r,echo=FALSE}
+Data$Attrition <- ifelse(Data$Attrition=="Yes",1,0)
+```
+
+
+
+### Ajuste de un modelo logístico.
+
+
+Para este estudio se ha determinado trabajar con partición de datos de 80% para entrenamineto del modelo y 20% para el test de los supuestos. 
+
+
+
+```{r, echo=FALSE}
+set.seed(1)
+index=sample(2,nrow(Data), replace = T, prob = c(0.8,0.2))
+train <- Data[index==1,]
+test <- Data[index==2,]
+```
+
+
+```{r,echo=FALSE}
+set.seed(1)
+modelo_logistico <- glm(train$Attrition~.,data=train,family="binomial")
+```
+
+
+```{r,echo=FALSE}
+summary(modelo_logistico)
+```
+
+### Curva ROC
+
+
+*Reciever Operating Characteristics*, es una curva que constrata los verdaderos positivos pronosticados, es decir para la medida debemos obtener un valor cercana a 1 es muestra de un buen modelo. 
+
+
+```{r, echo=FALSE,warning=FALSE}
+library(ROCR)
+predicion = predict(modelo_logistico,test, type="response")
+pr <- prediction(predicion,test$Attrition)
+prf <- performance(pr,measure = "tpr",x.measure = "fpr")
+plot(prf)
+```
+
+
+```{r,echo=FALSE}
+auc <- performance(pr, measure = "auc")
+auc <- auc@y.values[[1]]
+print(paste("Accuracy",round(auc,3)))
+```
+
+
+* Se observa que el modelo logistico presenta una presición cercana al 81%. 
+
+
+
+### Arbol de decisión
+
+*CART: Classification And Regression Trees.* Esta es una técnica de aprendizaje supervisado. Tenemos una variable objetivo (dependiente) y nuestra meta es obtener una función que nos permita predecir, a partir de variables predictoras (independientes), el valor de la variable objetivo para casos desconocidos.
+
+
+```{r, echo=FALSE, warning=FALSE}
+library(rpart)
+library(rpart.plot)
+```
+
+
+```{r, echo=FALSE, warning=FALSE}
+train$Attrition <- factor(train$Attrition)
+
+set.seed(1)
+arbol <- rpart(Attrition~.,data = train, method="class")
+```
+
+
+Una vez explicado, el modelo de predesición que se plantea realiazar procedemos a realizar la estimación del mismo. 
+
+
+**Resultados**
+
+
+```{r,echo=FALSE}
+rpart.plot(arbol,main="Arbol de desición Abandonos")
+```
+
+
+Aquí podemos ver los nodos y ramas del arbol, sin embargo un resumen mas estricto seria mirar la significancia del modelo. 
+
+
+### Evaluando nuestro modelo 
+
+
+```{r,echo=FALSE,warning=FALSE}
+library(caret)
+prediccion <- predict(arbol, newdata = test, type = "class")
+```
+
+
+*Matrix de confusición*
+
+
+```{r, echo=FALSE, warning=FALSE}
+
+table_mat <- table(test$Attrition,prediccion)
+rownames(table_mat) <- c("Abandonoa Si","Abandona No")
+colnames(table_mat) <- c("Predición SI", "Predición NO")
+table_mat
+```
+
+
+```{r, echo=FALSE, warning=FALSE}
+
+accuracy_Test <- sum(diag(table_mat)) / sum(table_mat)
+print(paste('Accuracy', round(accuracy_Test,2)))
+```
+
+* Se evidencia, como el arbol de desición posee una presición cercana al 80% 
+
+
+
+
