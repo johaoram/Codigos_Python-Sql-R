@@ -36,12 +36,6 @@ options = {
 'Content-Type': 'text/xml; charset=utf-8'
 }
 
-# Reemplazar los valores reales en el cuerpo SOAP
-#SOAPEnvelope = SOAPEnvelope.replace('your_username', 'wsviajes')
-#SOAPEnvelope = SOAPEnvelope.replace('your_password', 'Wsrc2024*')
-#SOAPEnvelope = SOAPEnvelope.replace('your_company', 'Renting colombia')
-#SOAPEnvelope = SOAPEnvelope.replace('dateTime', '2023-07-01 11:59:59')
-#SOAPEnvelope = SOAPEnvelope.replace('string', '20585562')
 
 # Realizar la solicitud POST
 response = requests.post(url, data=SOAPEnvelope, headers=options)
